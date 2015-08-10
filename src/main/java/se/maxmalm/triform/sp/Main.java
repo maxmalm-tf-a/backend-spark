@@ -40,7 +40,13 @@ public class Main {
             String token = null;
 
             if(db.checkUserFree(username)) {
-                token = db.createUser(username, password);
+                try {
+                    token = db.createUser(username, password);
+                }
+                catch(IllegalArgumentException e) {
+                    halt(401, JSONUtil.String2Error(e.getMessage()));
+                }
+                
             }
             else {
                 halt(401, JSONUtil.String2Error("Username taken"));

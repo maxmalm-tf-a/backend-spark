@@ -155,8 +155,7 @@ public class Database {
             System.out.println(token);
         }
         catch(SQLException e) {
-            System.out.print("Failed");
-            e.printStackTrace();
+            throw new IllegalArgumentException("Invalid credentials");
         }
         return token;
     }
