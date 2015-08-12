@@ -16,7 +16,33 @@ public class Main {
         Database db = new Database ();
         enableCORS("*", "*", "*");
         
+        before((req, res) -> {
+            System.out.println(req.pathInfo());
+            System.out.println(req.queryParams("token"));
+            System.out.println(req.headers("Authorization"));
+            
+            String path = req.pathInfo();
+            if(!path.equals("/") && !path.equals("/account")){
+            
+                String token = req.queryParams("token");
+                int userid = 0;
+                try {
+                    System.out.println(token);
+                    userid = db.checkToken(token);
+                }
+                catch(IllegalArgumentException e) {
+                    halt(401, JSONUtil.String2Error("Token not valid (before)"));
+                }
+                
+                req.session().attribute("userid", userid);
+            }
+        });
+        
         get("/", (request, response) -> {
+            return JSONUtil.String2JSON("works");
+        });
+        
+        options("/*", (request, response) -> {
             return JSONUtil.String2JSON("works");
         });
         
@@ -57,28 +83,14 @@ public class Main {
         // token verification
         get("/verifytoken", (req, res) -> {
             
-            String token = req.queryParams("token");
-            int userid = 0;
-            try {
-                userid = db.checkToken(token);
-                System.out.println(userid);
-            }
-            catch(IllegalArgumentException e) {
-                halt(401, JSONUtil.String2Error(e.getMessage()));
-            }
+            int userid = req.session().attribute("userid");
             return JSONUtil.Int2JSON(userid);
         });
         
         // transactions
         get("/transactions", (req, res) -> {
             String token = req.queryParams("token");
-            ResultSet rs = null;
-            try {
-                rs = db.getTransactions(token);
-            }
-            catch(IllegalArgumentException e) {
-                halt(401, JSONUtil.String2Error(e.getMessage()));
-            }
+            ResultSet rs = db.getTransactions(token);
             String result = JSONUtil.rs(rs);
             return result;
         });
@@ -86,13 +98,7 @@ public class Main {
         // seed database
         post("/seed", (req, res) -> {
             String token = req.queryParams("token");
-            int userId;
-            try {
-                userId = db.checkToken(token);
-            }
-            catch(IllegalArgumentException e) {
-                halt(401, JSONUtil.String2Error(e.getMessage()));
-            }
+            
             db.clearTransactions(token);
             db.insertTransactions(token, "Lön", 40000, "Inkomst", 30);
             db.insertTransactions(token, "Kaffe", -40, "Nöje", 29);
